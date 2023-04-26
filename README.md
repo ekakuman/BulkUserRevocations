@@ -6,5 +6,10 @@ Python Script to Revoke Users in Bulk after a password change
   4. Admin Access token can be obtained from https://developer.webex.com/docs/api/getting-started
   5. Output file called Errors.csv is generated at the end in the same directory as the input CSV file.
   6. Tested with Python version 3.9.12
+  
+# Usage
+Requires two inputs. Access token and name of the CSV file.
+
+python3 BulkUserRevocationsv1.py
 
 
