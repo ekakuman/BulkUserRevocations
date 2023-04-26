@@ -1,5 +1,5 @@
 # BulkUserRevocations
-Python Script to Revoke Users in Bulk after a password change
+Python script to revoke Webex Control Hub users in bulk after a password change
   1. This script is designed to revoke users from a Control Hub organization based on an INPUT CSV file with user emails or upn addresses.
   2. The column names are named in the csv as "email" and "upn" for respective user email address or upn addresses.
   3. The script is designed to be executed by users with "full admin" role in the org.
