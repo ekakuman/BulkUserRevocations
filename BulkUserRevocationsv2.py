@@ -80,7 +80,7 @@ def retrieve_user_auth():
                 print(f'No IDs listed for {email}\n')
             file_path = os.path.abspath('Errors.csv')
             with open(file_path,'a') as csvfile:
-                csvfile.write(email + ',' + str(response.status_code) + ',' + error_message + '\n')
+                csvfile.write(str(email) + ',' + str(response.status_code) + ',' + error_message + '\n')
         else:
             get_auth_response_json = response.json()
             items = get_auth_response_json['items']
