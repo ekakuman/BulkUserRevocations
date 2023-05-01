@@ -108,7 +108,7 @@ def revoke_user_auth():
                 print(f'HTTP Response: {response.status_code}, Message: {error_message}, ID: {item}\n')
                 file_path = os.path.abspath('Errors.csv')
                 with open(file_path,'a') as csvfile:
-                    csvfile.write(str(response.status_code) + ',' + error_message + '\n')
+                    csvfile.write(str(item) + ',' + str(response.status_code) + ',' + error_message + '\n')
             else:
                 print(f'User Revocation is successful - {item}\n')
     print('#############   End revoking User Authorization IDs   #############\n\n')
