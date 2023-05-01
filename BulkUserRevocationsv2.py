@@ -59,7 +59,7 @@ def retrieve_user_auth():
     email_addresses = user_email_addresses+upn_email_addresses
 
     # List Unique Email Address from User Email and UPN addresses
-    unique_email_addresses = list(set(email_addresses))
+    unique_email_addresses = list(set([email for email in email_addresses if pd.notna(email)]))
 
     ### Retrieve all User Authorization ID's
     print('\n############# Begin retreiving User Authorization IDs #############\n')
