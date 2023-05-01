@@ -10,6 +10,6 @@ Python script to revoke Webex Control Hub users in bulk after a password change
 # Usage
 Requires two inputs. Access token and name of the CSV file.
 
-python3 BulkUserRevocationsv1.py
+python3 BulkUserRevocationsv2.py
 
 
