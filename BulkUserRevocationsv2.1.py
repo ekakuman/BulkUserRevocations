@@ -5,34 +5,29 @@ The column names to be renamed in the csv as "email" and "upn" for respective us
 The script is designed to be executed by users with "full admin" role in the org.
 Admin Access token can be obtained from https://developer.webex.com/docs/api/getting-started
 Output file called Errors.csv is generated at the end in the same directory as the input CSV file 
-Tested with Python version 3.9.12
+Tested with Python version 3.11.4
 """
 
 __author__ = "Ephraim Kakumani"
-__date__ = "04/24/2023"
+__date__ = "07/11/2023"
 
 #############  Imports  #############
 import requests
-import json
 import csv
 import pandas as pd
-import time
 import os
 
 #############  Definitions  #############
-access_token = '' 
-file_path = ''                                                   
-auth_ids = []
 get_auth_url = 'https://webexapis.com/v1/authorizations'                # Webex CH Get Authorizations Ids API URL
 del_auth_url = 'https://webexapis.com/v1/authorizations/'               # Webex CH Delete Authorizations Ids API URL
-gey_my_info_url = 'https://webexapis.com/v1/people/me'                  # Webex CH Get My Info API URL
+get_my_info_url = 'https://webexapis.com/v1/people/me'                  # Webex CH Get My Info API URL
 
 #############  File Tasks  #############
 if os.path.exists("Errors.csv"):
     os.remove("Errors.csv")
 
 file_path = os.path.abspath('Errors.csv')
-fieldnames = ['Item', 'Response Code', 'Log Message']
+fieldnames = ['Item', 'Response Code', 'Application Name', 'Log Message']
 
 # open file for writing and create csv writer object
 with open(file_path, 'w', newline='') as csvfile:
@@ -43,11 +38,11 @@ with open(file_path, 'w', newline='') as csvfile:
 
 #############  Validate Access Token  #############
 def get_access_token():
-    global access_token
+    #global access_token
     access_token = ''
     while not access_token:
         access_token = input('Please enter your access token:  ')
-        validationResponse = requests.get(gey_my_info_url, headers={'Authorization': 'Bearer ' + access_token})
+        validationResponse = requests.get(get_my_info_url, headers={'Authorization': 'Bearer ' + access_token})
         if validationResponse.status_code == 401:
             # This means the access token was invalid.
             print('Access Token was invalid.  Please check your access token was entered correctly and hasn\'t expired and try again below.\n')
@@ -55,10 +50,8 @@ def get_access_token():
     return access_token
 
 #############  Retrieve User Authorization ID's #############
-def retrieve_user_auth():
-    global file_path
-    global auth_ids
-    auth_ids = []
+def retrieve_user_auth(access_token):
+    auth_ids = []  # Creating an empty list with two values
     file_name = input('Enter CSV file name: ')
     file_path = os.path.abspath(file_name)
     df = pd.read_csv(file_name)
@@ -94,16 +87,18 @@ def retrieve_user_auth():
                 get_auth_response_json = response.json()
                 items = get_auth_response_json['items']
                 for item in items:
-                    temp = item['id']
-                    auth_ids.append(temp)
-                    writer.writerow({'Item': temp, 'Response Code': response.status_code, 'Log Message': 'No Error - Retrieve Successful'})
+                    temp_id = item['id']
+                    temp_app_name = item['applicationName']
+                    auth_ids.append({'id': temp_id, 'applicationName': temp_app_name})
+                    writer.writerow({'Item': temp_id, 'Application Name': temp_app_name, 'Response Code': response.status_code, 'Log Message': 'No Error - Retrieve Successful'})
                 print(f'Email: {email}, Authorization IDs: {auth_ids}\n')
         writer.writerow({'Item': '', 'Response Code': '', 'Log Message': ''})
+        print('ID and Application Name :', auth_ids)
     print('#############  End retreiving User Authorization IDs  #############\n\n')
     return auth_ids
 
 #############  Revoke User Authorization ID's #############
-def revoke_user_auth():
+def revoke_user_auth(auth_ids, access_token):
     print('#############  Begin revoking User Authorization IDs  #############\n')
     with open('Errors.csv', 'a', newline='') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
@@ -111,25 +106,29 @@ def revoke_user_auth():
             print('No User Authorization IDs to Revoke.\n')
         else:
             for item in auth_ids:
-                del_email_auth_url = del_auth_url+item
-                print(del_email_auth_url)
-                headers = {'Authorization': 'Bearer ' + access_token, 
-                'Content-Type': 'application/json'}
-                response = requests.delete(del_email_auth_url,headers=headers)
-                if response.status_code != 204:
-                    error_message = response.json()['message']
-                    print(f'HTTP Response: {response.status_code}, Message: {error_message}, ID: {item}\n')
-                    writer.writerow({'Item': item, 'Response Code': response.status_code, 'Log Message': 'Delete Auth Failure'})
-                else:
-                    writer.writerow({'Item': item, 'Response Code': response.status_code, 'Log Message': 'No Error - Revocation Successful'})
-                    print(f'User revocation is successful for {item}\n')
+                #print(item)
+                if item['applicationName'] != 'Webex device':
+                    del_email_auth_url = del_auth_url+item['id']
+                    print(del_email_auth_url)
+                    print(item['applicationName'])
+                    headers = {'Authorization': 'Bearer ' + access_token, 
+                    'Content-Type': 'application/json'}
+                    response = requests.delete(del_email_auth_url,headers=headers)
+                    if response.status_code != 204:
+                        error_message = response.json()['message']
+                        print(f'HTTP Response: {response.status_code}, Message: {error_message}, ID: {item}\n')
+                        writer.writerow({'Item': item['id'], 'Application Name': item['applicationName'], 'Response Code': response.status_code, 'Log Message': 'Delete Auth Failure'})
+                    else:
+                        writer.writerow({'Item': item['id'], 'Application Name': item['applicationName'], 'Response Code': response.status_code, 'Log Message': 'No Error - Revocation Successful'})
+                        print(f'User revocation is successful for {item}\n')
     print('#############   End revoking User Authorization IDs   #############\n\n')
 
 #############  Main Function #############
 def main():
-    get_access_token()
-    retrieve_user_auth()
-    revoke_user_auth()
+    access_token = get_access_token()
+    auth_ids = retrieve_user_auth(access_token)
+    revoke_user_auth(auth_ids, access_token)
+
     print('############# Note: Please check for the file Errors.csv for logs or any errors. #############\n\n')
 if __name__ == '__main__':
     main()
